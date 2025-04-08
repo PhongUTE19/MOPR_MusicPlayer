@@ -278,11 +278,14 @@ public class MusicService extends Service
         if (mediaSession == null)
             return;
 
-        Intent intent = new Intent(this, MainActivity.class);
         PendingIntent contentIntent = PendingIntent.getActivity(
-                this, 0, intent,
+                this,
+                0,
+                new Intent(this, PlaylistActivity.class)
+                        .setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP),
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
+
 
         PendingIntent prevIntent = MediaButtonReceiver.buildMediaButtonPendingIntent(
                 this, PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS);
