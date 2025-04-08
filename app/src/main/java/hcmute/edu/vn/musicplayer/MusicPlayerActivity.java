@@ -7,6 +7,8 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
 import android.widget.Button;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -24,6 +26,7 @@ public class MusicPlayerActivity extends AppCompatActivity
     TextView tvCurrentPosition;
     TextView tvDuration;
     SeekBar sbProgress;
+    Button btnBack;
     Button btnPlayPause;
     Button btnNext;
     Button btnPrev;
@@ -95,12 +98,14 @@ public class MusicPlayerActivity extends AppCompatActivity
         sbProgress = findViewById(R.id.sbProgress);
         tvCurrentPosition = findViewById(R.id.tvCurrentTime);
         tvDuration = findViewById(R.id.tvDuration);
+        btnBack = findViewById(R.id.btnBack);
         btnPlayPause = findViewById(R.id.btnPlayPause);
         btnNext = findViewById(R.id.btnNext);
         btnPrev = findViewById(R.id.btnPrev);
         btnLoop = findViewById(R.id.btnLoop);
         btnShuffle = findViewById(R.id.btnShuffle);
 
+        btnBack.setOnClickListener(v -> finish());
         setButton(btnPlayPause, MusicService.ACTION_PLAY_PAUSE);
         setButton(btnNext, MusicService.ACTION_NEXT);
         setButton(btnPrev, MusicService.ACTION_PREVIOUS);
@@ -138,6 +143,20 @@ public class MusicPlayerActivity extends AppCompatActivity
         filter.addAction(MusicService.UPDATE_PROGRESS);
         filter.addAction(MusicService.UPDATE_BUTTON_CLICK);
         LocalBroadcastManager.getInstance(this).registerReceiver(receiver, filter);
+    }
+
+    @Override
+    protected void onStart()
+    {
+        super.onStart();
+        int index = getIntent().getIntExtra("index", 0);
+        int resId = getIntent().getIntExtra("resId", 0);
+
+        Intent serviceIntent = new Intent(this, MusicService.class);
+        serviceIntent.setAction(MusicService.ACTION_PLAY_SELECTED);
+        serviceIntent.putExtra("index", index);
+        serviceIntent.putExtra("resId", resId);
+        startService(serviceIntent);
     }
 
     @Override

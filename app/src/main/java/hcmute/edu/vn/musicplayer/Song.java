@@ -3,14 +3,14 @@ package hcmute.edu.vn.musicplayer;
 public class Song {
     public String title;
     public String artist;
-    public String path;
-    public int duration;
+    public int resId;
+    public int index;
 
-    public Song(String title, String artist, String path, int duration) {
+    public Song(String title, String artist, int resId, int index) {
         this.title = title;
         this.artist = artist;
-        this.path = path;
-        this.duration = duration;
+        this.resId = resId;
+        this.index = index;
     }
 
     @Override

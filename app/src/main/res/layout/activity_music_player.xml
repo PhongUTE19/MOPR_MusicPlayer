@@ -33,16 +33,25 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tvSong" />
 
+    <ImageView
+        android:id="@+id/imgAlbum"
+        android:layout_width="180dp"
+        android:layout_height="180dp"
+        android:layout_marginTop="30dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvArtist" />
+
     <SeekBar
         android:id="@+id/sbProgress"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginLeft="50dp"
-        android:layout_marginTop="100dp"
+        android:layout_marginTop="30dp"
         android:layout_marginRight="50dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvArtist" />
+        app:layout_constraintTop_toBottomOf="@id/imgAlbum" />
 
     <TextView
         android:id="@+id/tvCurrentTime"
@@ -61,6 +70,17 @@
         android:textSize="16sp"
         app:layout_constraintEnd_toEndOf="@id/sbProgress"
         app:layout_constraintTop_toBottomOf="@id/sbProgress" />
+
+    <Button
+        android:id="@+id/btnBack"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="20dp"
+
+        android:text="Back"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <Button
         android:id="@+id/btnPlayPause"
@@ -94,8 +114,8 @@
         android:id="@+id/btnLoop"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
         android:layout_marginStart="20dp"
+        android:layout_marginTop="20dp"
         android:text="Loop"
         app:layout_constraintStart_toEndOf="@id/btnPlayPause"
         app:layout_constraintTop_toBottomOf="@id/btnPlayPause" />

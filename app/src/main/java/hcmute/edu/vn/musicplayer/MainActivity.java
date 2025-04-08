@@ -22,7 +22,7 @@ public class MainActivity extends AppCompatActivity
                 ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.POST_NOTIFICATIONS}, 1001);
         }
 
-        Intent intent = new Intent(this, MusicPlayerActivity.class);
+        Intent intent = new Intent(this, PlaylistActivity.class);
         startActivity(intent);
     }
 }

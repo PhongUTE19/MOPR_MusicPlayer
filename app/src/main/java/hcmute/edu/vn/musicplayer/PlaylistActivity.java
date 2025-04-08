@@ -1,22 +1,20 @@
 package hcmute.edu.vn.musicplayer;
 
 import android.content.Intent;
-import android.database.Cursor;
-import android.net.Uri;
 import android.os.Bundle;
-import android.provider.MediaStore;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 
 public class PlaylistActivity extends AppCompatActivity
 {
-    ListView lvSongs;
-    ArrayList<Song> songList = new ArrayList<>();
-    ArrayAdapter<Song> adapter;
+    public static ArrayList<Song> songs = new ArrayList<>();
+    private ListView lvSongs;
+    private ArrayAdapter<Song> adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -24,70 +22,62 @@ public class PlaylistActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_playlist);
         lvSongs = findViewById(R.id.lvSongs);
-        adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, songList);
+        adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, songs);
         lvSongs.setAdapter(adapter);
 
-        loadSongs();
-//        loadSongsFromPhone();
+        loadSongsFromRaw();
 
-        lvSongs.setOnItemClickListener((parent, view, position, id) -> {
-            Song selected = songList.get(position);
+        lvSongs.setOnItemClickListener((parent, view, position, id) ->
+        {
+            Song selected = songs.get(position);
             Intent intent = new Intent(PlaylistActivity.this, MusicPlayerActivity.class);
-            intent.setAction("PLAY_SELECTED");
-            intent.putExtra("path", selected.path);
+            intent.putExtra("index", selected.index);
+            intent.putExtra("resId", selected.resId);
             intent.putExtra("title", selected.title);
             intent.putExtra("artist", selected.artist);
             startActivity(intent);
         });
     }
 
-    private void loadSongs() {
-        Uri songUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
-        String selection = MediaStore.Audio.Media.IS_MUSIC + " != 0";
-        Cursor cursor = getContentResolver().query(songUri, null, selection, null, null);
+    private void loadSongsFromRaw()
+    {
+        Field[] fields = R.raw.class.getFields();
 
-        if (cursor != null && cursor.moveToFirst()) {
-            int titleCol = cursor.getColumnIndex(MediaStore.Audio.Media.TITLE);
-            int artistCol = cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST);
-            int dataCol = cursor.getColumnIndex(MediaStore.Audio.Media.DATA);
-            int durationCol = cursor.getColumnIndex(MediaStore.Audio.Media.DURATION);
+        for (int i = 0; i < fields.length; i++)
+        {
+            try
+            {
+                Field field = fields[i];
+                int resId = field.getInt(field);
+                String rawName = field.getName();
 
-            do {
-                String title = cursor.getString(titleCol);
-                String artist = cursor.getString(artistCol);
-                String path = cursor.getString(dataCol);
-                int duration = cursor.getInt(durationCol);
+                String title = capitalize(rawName.replace("_", " "));
+                String artist = "Unknown Artist";
 
-                songList.add(new Song(title, artist, path, duration));
-            } while (cursor.moveToNext());
-
-            cursor.close();
+                songs.add(new Song(title, artist, resId, i));
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
+            }
         }
+
+        adapter.notifyDataSetChanged();
     }
 
-    private void loadSongsFromPhone() {
-        Uri songUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
-        String selection = MediaStore.Audio.Media.IS_MUSIC + " != 0";
-        Cursor cursor = getContentResolver().query(songUri, null, selection, null, null);
-
-        if (cursor != null && cursor.moveToFirst()) {
-            int titleColumn = cursor.getColumnIndex(MediaStore.Audio.Media.TITLE);
-            int artistColumn = cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST);
-            int dataColumn = cursor.getColumnIndex(MediaStore.Audio.Media.DATA);
-            int durationColumn = cursor.getColumnIndex(MediaStore.Audio.Media.DURATION);
-
-            do {
-                String title = cursor.getString(titleColumn);
-                String artist = cursor.getString(artistColumn);
-                String path = cursor.getString(dataColumn);
-                int duration = cursor.getInt(durationColumn);
-
-                songList.add(new Song(title, artist, path, duration));
-            } while (cursor.moveToNext());
-
-            cursor.close();
-            adapter.notifyDataSetChanged();
+    private String capitalize(String input)
+    {
+        String[] words = input.split(" ");
+        StringBuilder sb = new StringBuilder();
+        for (String word : words)
+        {
+            if (word.length() > 0)
+            {
+                sb.append(Character.toUpperCase(word.charAt(0)))
+                        .append(word.substring(1)).append(" ");
+            }
         }
+        return sb.toString().trim();
     }
 
 }
