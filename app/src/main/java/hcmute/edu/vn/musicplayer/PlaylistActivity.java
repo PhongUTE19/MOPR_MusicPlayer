@@ -1,8 +1,10 @@
 package hcmute.edu.vn.musicplayer;
 
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.os.Bundle;
-import android.util.Log;
+import android.provider.MediaStore;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
@@ -27,15 +29,17 @@ public class PlaylistActivity extends AppCompatActivity
         lvSongs.setAdapter(adapter);
 
         loadSongsFromRaw();
+//        loadSongsFromStorage();
 
         lvSongs.setOnItemClickListener((parent, view, position, id) ->
         {
             Song selected = songs.get(position);
-            Intent intent = new Intent(PlaylistActivity.this, MusicPlayerActivity.class);
-            intent.putExtra("index", selected.index);
-            intent.putExtra("resId", selected.resId);
+            Intent intent = new Intent(PlaylistActivity.this, MusicActivity.class);
             intent.putExtra("title", selected.title);
             intent.putExtra("artist", selected.artist);
+            intent.putExtra("path", selected.path);
+            intent.putExtra("resID", selected.resID);
+            intent.putExtra("index", selected.index);
             startActivity(intent);
         });
     }
@@ -43,7 +47,6 @@ public class PlaylistActivity extends AppCompatActivity
     private void loadSongsFromRaw()
     {
         Field[] fields = R.raw.class.getFields();
-
         for (int i = 0; i < fields.length; i++)
         {
             try
@@ -51,16 +54,47 @@ public class PlaylistActivity extends AppCompatActivity
                 Field field = fields[i];
                 int resId = field.getInt(field);
                 String rawName = field.getName();
-
                 String title = capitalize(rawName.replace("_", " "));
                 String artist = "Unknown Artist";
-
-                songs.add(new Song(title, artist, resId, i));
+                songs.add(new Song(title, artist, "", resId, i));
             }
             catch (Exception e)
             {
                 e.printStackTrace();
             }
+        }
+    }
+
+    private void loadSongsFromStorage() {
+        songs.clear();
+
+        String[] projection = {
+                MediaStore.Audio.Media.TITLE,
+                MediaStore.Audio.Media.ARTIST,
+                MediaStore.Audio.Media.DATA
+        };
+
+        String selection = MediaStore.Audio.Media.IS_MUSIC + "!= 0";
+        Cursor cursor = getContentResolver().query(
+                MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                projection,
+                selection,
+                null,
+                MediaStore.Audio.Media.TITLE + " ASC"
+        );
+
+        int index = 0;
+
+        if (cursor != null) {
+            while (cursor.moveToNext()) {
+                String title = cursor.getString(0);
+                String artist = cursor.getString(1);
+                String path = cursor.getString(2);
+
+                songs.add(new Song(title, artist, path, 0, index));
+                index++;
+            }
+            cursor.close();
         }
 
         adapter.notifyDataSetChanged();

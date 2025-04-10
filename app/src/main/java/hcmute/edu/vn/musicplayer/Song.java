@@ -3,13 +3,15 @@ package hcmute.edu.vn.musicplayer;
 public class Song {
     public String title;
     public String artist;
-    public int resId;
+    public String path;
+    public int resID;
     public int index;
 
-    public Song(String title, String artist, int resId, int index) {
+    public Song(String title, String artist, String path, int resID, int index) {
         this.title = title;
         this.artist = artist;
-        this.resId = resId;
+        this.path = path;
+        this.resID = resID;
         this.index = index;
     }
 

@@ -18,13 +18,13 @@ import android.os.IBinder;
 import android.os.Build;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
+import android.util.Log;
 
 import java.util.Random;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
-import androidx.media.session.MediaButtonReceiver;
 
 public class MusicService extends Service
 {
@@ -66,10 +66,15 @@ public class MusicService extends Service
         @Override
         public void onReceive(Context context, Intent intent)
         {
-            if (AudioManager.ACTION_AUDIO_BECOMING_NOISY.equals(intent.getAction()) && isPlay)
-                playPauseSong();
-            else if (Intent.ACTION_HEADSET_PLUG.equals(intent.getAction()) && !isPlay)
-                playPauseSong();
+            int plugged = intent.getIntExtra("state", 0);
+//            if (AudioManager.ACTION_AUDIO_BECOMING_NOISY.equals(intent.getAction()) && isPlay)
+//                playPauseSong();
+            if (Intent.ACTION_HEADSET_PLUG.equals(intent.getAction()) && isPlay)
+            {
+                player.pause();
+                handler.removeCallbacks(updateRunnable);
+                isPlay = false;
+            }
         }
     };
 
@@ -132,7 +137,7 @@ public class MusicService extends Service
             {
                 case ACTION_PLAY_SELECTED:
                     currentIndex = intent.getIntExtra("index", 0);
-                    playSelectedSong(intent.getIntExtra("resId", 0));
+                    playSelectedSong();
                     break;
                 case ACTION_PLAY_PAUSE:
                     playPauseSong();
@@ -179,12 +184,12 @@ public class MusicService extends Service
         return null;
     }
 
-    private void playSelectedSong(int songIndex)
+    private void playSelectedSong()
     {
         isPlay = true;
         handler.postDelayed(updateRunnable, 0);
 
-        runSong(songIndex);
+        runSong();
         updateButtonClick(ACTION_PLAY_PAUSE, isPlay);
     }
 
@@ -201,7 +206,7 @@ public class MusicService extends Service
             handler.postDelayed(updateRunnable, 0);
         }
 
-        updateNotification(PlaylistActivity.songs.get(currentIndex).title, PlaylistActivity.songs.get(currentIndex).artist);
+        updateNotification();
         isPlay = !isPlay;
         updateButtonClick(ACTION_PLAY_PAUSE, isPlay);
     }
@@ -210,16 +215,14 @@ public class MusicService extends Service
     {
         currentIndex++;
         currentIndex = currentIndex > PlaylistActivity.songs.size() - 1 ? 0 : currentIndex;
-        Song song = PlaylistActivity.songs.get(currentIndex);
-        runSong(song.resId);
+        runSong();
     }
 
     private void prevSong()
     {
         currentIndex--;
         currentIndex = currentIndex < 0 ? PlaylistActivity.songs.size() - 1 : currentIndex;
-        Song song = PlaylistActivity.songs.get(currentIndex);
-        runSong(song.resId);
+        runSong();
     }
 
     private void loopSong()
@@ -234,15 +237,16 @@ public class MusicService extends Service
         updateButtonClick(ACTION_SHUFFLE, isShuffle);
     }
 
-    private void runSong(int songIndex)
+    private void Test()
     {
+        Song song = PlaylistActivity.songs.get(currentIndex);
         if (player != null)
         {
             player.stop();
             player.release();
         }
 
-        player = MediaPlayer.create(this, songIndex);
+        player = MediaPlayer.create(this, song.resID);
         player.setOnCompletionListener(mp ->
         {
             if (isLoop)
@@ -253,8 +257,7 @@ public class MusicService extends Service
             else if (isShuffle)
             {
                 currentIndex = new Random().nextInt(PlaylistActivity.songs.size());
-                Song song = PlaylistActivity.songs.get(currentIndex);
-                runSong(song.resId);
+                runSong();
             }
             else
                 nextSong();
@@ -263,20 +266,71 @@ public class MusicService extends Service
         if (isPlay)
             player.start();
 
-        Song song = PlaylistActivity.songs.get(currentIndex);
-        updateNotification(song.title, song.artist);
-
         Intent intent = new Intent(UPDATE_MUSIC_CHANGE);
         intent.putExtra("title", song.title);
         intent.putExtra("artist", song.artist);
         intent.putExtra("duration", player.getDuration());
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+        updateNotification();
     }
 
-    private void updateNotification(String title, String text)
+    private void runSong()
+    {
+        Test();
+        return;
+
+//        Song song = PlaylistActivity.songs.get(currentIndex);
+//        if (player != null)
+//        {
+//            player.stop();
+//            player.release();
+//        }
+//
+//        player = new MediaPlayer();
+//        try
+//        {
+//            player.setDataSource(song.path);
+//            player.prepare();
+//            player.setOnCompletionListener(mp ->
+//            {
+//                if (isLoop)
+//                {
+//                    player.seekTo(0);
+//                    player.start();
+//                }
+//                else if (isShuffle)
+//                {
+//                    currentIndex = new Random().nextInt(PlaylistActivity.songs.size());
+//                    runSong();
+//                }
+//                else
+//                    nextSong();
+//            });
+//
+//            if (isPlay)
+//                player.start();
+//
+//            Intent intent = new Intent(UPDATE_MUSIC_CHANGE);
+//            intent.putExtra("title", song.title);
+//            intent.putExtra("artist", song.artist);
+//            intent.putExtra("duration", player.getDuration());
+//            LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+//            updateNotification();
+//        }
+//        catch (Exception e)
+//        {
+//            Log.e("MusicService", "Error playing song: " + e.getMessage(), e);
+//        }
+    }
+
+    private void updateNotification()
     {
         if (mediaSession == null)
             return;
+
+        Song song = PlaylistActivity.songs.get(currentIndex);
+        String title = song.title;
+        String text = song.artist;
 
         PendingIntent contentIntent = PendingIntent.getActivity(
                 this,
@@ -286,16 +340,24 @@ public class MusicService extends Service
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
 
+        PendingIntent prevIntent = PendingIntent.getService(
+                this, 0, new Intent(this, MusicService.class).setAction(ACTION_PREVIOUS),
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
-        PendingIntent prevIntent = MediaButtonReceiver.buildMediaButtonPendingIntent(
-                this, PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS);
-        PendingIntent playPauseIntent = MediaButtonReceiver.buildMediaButtonPendingIntent(
-                this, isPlay ? PlaybackStateCompat.ACTION_PAUSE : PlaybackStateCompat.ACTION_PLAY);
-        PendingIntent nextIntent = MediaButtonReceiver.buildMediaButtonPendingIntent(
-                this, PlaybackStateCompat.ACTION_SKIP_TO_NEXT);
+        PendingIntent playPauseIntent = PendingIntent.getService(
+                this, 1, new Intent(this, MusicService.class).setAction(ACTION_PLAY_PAUSE),
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
-        // Fallback icons if custom ones not available
-        int playPauseIcon = isPlay ? android.R.drawable.ic_media_pause : android.R.drawable.ic_media_play;
+        PendingIntent nextIntent = PendingIntent.getService(
+                this, 2, new Intent(this, MusicService.class).setAction(ACTION_NEXT),
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+//        PendingIntent prevIntent = MediaButtonReceiver.buildMediaButtonPendingIntent(
+//                this, PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS);
+//        PendingIntent playPauseIntent = MediaButtonReceiver.buildMediaButtonPendingIntent(
+//                this, isPlay ? PlaybackStateCompat.ACTION_PAUSE : PlaybackStateCompat.ACTION_PLAY);
+//        PendingIntent nextIntent = MediaButtonReceiver.buildMediaButtonPendingIntent(
+//                this, PlaybackStateCompat.ACTION_SKIP_TO_NEXT);
 
         Bitmap albumBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ic_notification);
         Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
@@ -305,7 +367,10 @@ public class MusicService extends Service
                 .setContentText(text)
                 .setContentIntent(contentIntent)
                 .addAction(android.R.drawable.ic_media_previous, "Previous", prevIntent)
-                .addAction(playPauseIcon, isPlay ? "Pause" : "Play", playPauseIntent)
+                .addAction(
+                        isPlay ? android.R.drawable.ic_media_pause : android.R.drawable.ic_media_play,
+                        isPlay ? "Pause" : "Play",
+                        playPauseIntent)
                 .addAction(android.R.drawable.ic_media_next, "Next", nextIntent)
                 .setStyle(new androidx.media.app.NotificationCompat.MediaStyle()
                         .setMediaSession(mediaSession.getSessionToken())
@@ -319,12 +384,11 @@ public class MusicService extends Service
         if (player != null)
         {
             PlaybackStateCompat state = new PlaybackStateCompat.Builder()
-                    .setActions(
-                            PlaybackStateCompat.ACTION_PLAY |
-                                    PlaybackStateCompat.ACTION_PAUSE |
-                                    PlaybackStateCompat.ACTION_SKIP_TO_NEXT |
-                                    PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS |
-                                    PlaybackStateCompat.ACTION_PLAY_PAUSE)
+                    .setActions(PlaybackStateCompat.ACTION_PLAY |
+                            PlaybackStateCompat.ACTION_PAUSE |
+                            PlaybackStateCompat.ACTION_SKIP_TO_NEXT |
+                            PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS |
+                            PlaybackStateCompat.ACTION_PLAY_PAUSE)
                     .setState(isPlay ? PlaybackStateCompat.STATE_PLAYING : PlaybackStateCompat.STATE_PAUSED, player.getCurrentPosition(), 1.0f)
                     .build();
 

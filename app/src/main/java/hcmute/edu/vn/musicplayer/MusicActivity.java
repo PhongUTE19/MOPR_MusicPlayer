@@ -4,22 +4,15 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageManager;
-import android.os.Build;
 import android.os.Bundle;
-import android.util.Log;
-import android.view.View;
 import android.widget.Button;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
-import android.Manifest;
-
-public class MusicPlayerActivity extends AppCompatActivity
+public class MusicActivity extends AppCompatActivity
 {
     TextView tvSong;
     TextView tvArtist;
@@ -87,11 +80,6 @@ public class MusicPlayerActivity extends AppCompatActivity
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_music_player);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
-        {
-            if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
-                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.POST_NOTIFICATIONS}, 1001);
-        }
 
         tvSong = findViewById(R.id.tvSong);
         tvArtist = findViewById(R.id.tvArtist);
@@ -119,7 +107,7 @@ public class MusicPlayerActivity extends AppCompatActivity
             {
                 if (fromUser)
                 {
-                    Intent intent = new Intent(MusicPlayerActivity.this, MusicService.class);
+                    Intent intent = new Intent(MusicActivity.this, MusicService.class);
                     intent.setAction(MusicService.ACTION_SEEK);
                     intent.putExtra("seekPosition", progress);
                     startService(intent);
@@ -166,28 +154,11 @@ public class MusicPlayerActivity extends AppCompatActivity
         LocalBroadcastManager.getInstance(this).unregisterReceiver(receiver);
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults)
-    {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == 1001)
-        {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
-            {
-                // Permission granted
-            }
-            else
-            {
-                // Optional: Inform user that notifications may not work properly
-            }
-        }
-    }
-
     private void setButton(Button btn, String action)
     {
         btn.setOnClickListener(v ->
         {
-            Intent intent = new Intent(MusicPlayerActivity.this, MusicService.class);
+            Intent intent = new Intent(MusicActivity.this, MusicService.class);
             intent.setAction(action);
             startService(intent);
         });
