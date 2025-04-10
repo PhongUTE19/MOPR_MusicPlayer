@@ -13,26 +13,22 @@ import android.Manifest;
 
 public class MainActivity extends AppCompatActivity
 {
+    private final int REQUEST_CODE = 1;
+
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
-        requestPermissions();
-        goToPlaylist();
         if (hasAllPermissions())
             goToPlaylist();
         else
             requestPermissions();
-
     }
 
     private boolean hasAllPermissions()
     {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
-        {
-            return checkSelfPermission(Manifest.permission.READ_MEDIA_AUDIO) == PackageManager.PERMISSION_GRANTED &&
-                    checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED;
-        }
+            return checkSelfPermission(Manifest.permission.READ_MEDIA_AUDIO) == PackageManager.PERMISSION_GRANTED;
         else
             return checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
     }
@@ -41,12 +37,14 @@ public class MainActivity extends AppCompatActivity
     {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
         {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{
-                            Manifest.permission.READ_MEDIA_AUDIO,
-                            Manifest.permission.POST_NOTIFICATIONS
-                    },
-                    1);
+            if (checkSelfPermission(Manifest.permission.READ_MEDIA_AUDIO) != PackageManager.PERMISSION_GRANTED)
+            {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{
+                                Manifest.permission.READ_MEDIA_AUDIO,
+                        },
+                        REQUEST_CODE);
+            }
         }
         else
         {
@@ -54,7 +52,7 @@ public class MainActivity extends AppCompatActivity
                     new String[]{
                             Manifest.permission.READ_EXTERNAL_STORAGE
                     },
-                    2);
+                    REQUEST_CODE);
         }
     }
 
@@ -69,23 +67,13 @@ public class MainActivity extends AppCompatActivity
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults)
     {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == 1)
-        {
-            boolean granted = true;
-            for (int result : grantResults)
-            {
-                if (result != PackageManager.PERMISSION_GRANTED)
-                {
-                    granted = false;
-                    break;
-                }
-            }
 
-            if (granted)
-                goToPlaylist();
-            else
-                finish();
+        if (requestCode == REQUEST_CODE)
+        {
+                if (hasAllPermissions())
+                    goToPlaylist();
+                else
+                    finish();
         }
     }
-
 }

@@ -1,8 +1,10 @@
 package hcmute.edu.vn.musicplayer;
 
+import android.content.ContentResolver;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.media.MediaScannerConnection;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.widget.ArrayAdapter;
@@ -28,18 +30,18 @@ public class PlaylistActivity extends AppCompatActivity
         adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, songs);
         lvSongs.setAdapter(adapter);
 
-        loadSongsFromRaw();
-//        loadSongsFromStorage();
+//        loadSongsFromRaw();
+        loadSongsFromStorage();
 
         lvSongs.setOnItemClickListener((parent, view, position, id) ->
         {
-            Song selected = songs.get(position);
+            Song song = songs.get(position);
             Intent intent = new Intent(PlaylistActivity.this, MusicActivity.class);
-            intent.putExtra("title", selected.title);
-            intent.putExtra("artist", selected.artist);
-            intent.putExtra("path", selected.path);
-            intent.putExtra("resID", selected.resID);
-            intent.putExtra("index", selected.index);
+            intent.putExtra("title", song.title);
+            intent.putExtra("artist", song.artist);
+            intent.putExtra("path", song.path);
+            intent.putExtra("resID", song.resID);
+            intent.putExtra("index", song.index);
             startActivity(intent);
         });
     }
@@ -65,8 +67,10 @@ public class PlaylistActivity extends AppCompatActivity
         }
     }
 
-    private void loadSongsFromStorage() {
+    private void loadSongsFromStorage()
+    {
         songs.clear();
+        MediaScannerConnection.scanFile(this, new String[] { "/storage/emulated/0/Music/" }, null, null);
 
         String[] projection = {
                 MediaStore.Audio.Media.TITLE,
@@ -85,8 +89,10 @@ public class PlaylistActivity extends AppCompatActivity
 
         int index = 0;
 
-        if (cursor != null) {
-            while (cursor.moveToNext()) {
+        if (cursor != null)
+        {
+            while (cursor.moveToNext())
+            {
                 String title = cursor.getString(0);
                 String artist = cursor.getString(1);
                 String path = cursor.getString(2);

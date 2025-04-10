@@ -237,7 +237,7 @@ public class MusicService extends Service
         updateButtonClick(ACTION_SHUFFLE, isShuffle);
     }
 
-    private void Test()
+    private void runSong()
     {
         Song song = PlaylistActivity.songs.get(currentIndex);
         if (player != null)
@@ -246,81 +246,41 @@ public class MusicService extends Service
             player.release();
         }
 
-        player = MediaPlayer.create(this, song.resID);
-        player.setOnCompletionListener(mp ->
+        player = new MediaPlayer();
+        try
         {
-            if (isLoop)
+            player.setDataSource(song.path);
+            player.prepare();
+            player.setOnCompletionListener(mp ->
             {
-                player.seekTo(0);
+                if (isLoop)
+                {
+                    player.seekTo(0);
+                    player.start();
+                }
+                else if (isShuffle)
+                {
+                    currentIndex = new Random().nextInt(PlaylistActivity.songs.size());
+                    runSong();
+                }
+                else
+                    nextSong();
+            });
+
+            if (isPlay)
                 player.start();
-            }
-            else if (isShuffle)
-            {
-                currentIndex = new Random().nextInt(PlaylistActivity.songs.size());
-                runSong();
-            }
-            else
-                nextSong();
-        });
 
-        if (isPlay)
-            player.start();
-
-        Intent intent = new Intent(UPDATE_MUSIC_CHANGE);
-        intent.putExtra("title", song.title);
-        intent.putExtra("artist", song.artist);
-        intent.putExtra("duration", player.getDuration());
-        LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
-        updateNotification();
-    }
-
-    private void runSong()
-    {
-        Test();
-        return;
-
-//        Song song = PlaylistActivity.songs.get(currentIndex);
-//        if (player != null)
-//        {
-//            player.stop();
-//            player.release();
-//        }
-//
-//        player = new MediaPlayer();
-//        try
-//        {
-//            player.setDataSource(song.path);
-//            player.prepare();
-//            player.setOnCompletionListener(mp ->
-//            {
-//                if (isLoop)
-//                {
-//                    player.seekTo(0);
-//                    player.start();
-//                }
-//                else if (isShuffle)
-//                {
-//                    currentIndex = new Random().nextInt(PlaylistActivity.songs.size());
-//                    runSong();
-//                }
-//                else
-//                    nextSong();
-//            });
-//
-//            if (isPlay)
-//                player.start();
-//
-//            Intent intent = new Intent(UPDATE_MUSIC_CHANGE);
-//            intent.putExtra("title", song.title);
-//            intent.putExtra("artist", song.artist);
-//            intent.putExtra("duration", player.getDuration());
-//            LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
-//            updateNotification();
-//        }
-//        catch (Exception e)
-//        {
-//            Log.e("MusicService", "Error playing song: " + e.getMessage(), e);
-//        }
+            Intent intent = new Intent(UPDATE_MUSIC_CHANGE);
+            intent.putExtra("title", song.title);
+            intent.putExtra("artist", song.artist);
+            intent.putExtra("duration", player.getDuration());
+            LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+            updateNotification();
+        }
+        catch (Exception e)
+        {
+            Log.e("MusicService", "Error playing song: " + e.getMessage(), e);
+        }
     }
 
     private void updateNotification()
