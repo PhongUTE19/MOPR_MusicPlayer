@@ -28,7 +28,8 @@ public class MainActivity extends AppCompatActivity
     private boolean hasAllPermissions()
     {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
-            return checkSelfPermission(Manifest.permission.READ_MEDIA_AUDIO) == PackageManager.PERMISSION_GRANTED;
+            return checkSelfPermission(Manifest.permission.READ_MEDIA_AUDIO) == PackageManager.PERMISSION_GRANTED &&
+                    checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED;
         else
             return checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
     }
@@ -37,11 +38,13 @@ public class MainActivity extends AppCompatActivity
     {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
         {
-            if (checkSelfPermission(Manifest.permission.READ_MEDIA_AUDIO) != PackageManager.PERMISSION_GRANTED)
+            if (checkSelfPermission(Manifest.permission.READ_MEDIA_AUDIO) != PackageManager.PERMISSION_GRANTED ||
+                    checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
             {
                 ActivityCompat.requestPermissions(this,
                         new String[]{
                                 Manifest.permission.READ_MEDIA_AUDIO,
+                                Manifest.permission.POST_NOTIFICATIONS,
                         },
                         REQUEST_CODE);
             }
@@ -64,16 +67,63 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
+    protected void onResume()
+    {
+        super.onResume();
+        if (hasAllPermissions())
+            goToPlaylist();
+    }
+
+
+    @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults)
     {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
         if (requestCode == REQUEST_CODE)
         {
-                if (hasAllPermissions())
-                    goToPlaylist();
+            if (hasAllPermissions())
+            {
+                goToPlaylist();
+            }
+            else
+            {
+                boolean shouldShow = true;
+                for (String permission : permissions)
+                {
+                    if (!ActivityCompat.shouldShowRequestPermissionRationale(this, permission))
+                    {
+                        // User selected "Don't ask again"
+                        shouldShow = false;
+                        break;
+                    }
+                }
+
+                if (!shouldShow)
+                {
+                    // Show explanation + send to app settings
+                    new androidx.appcompat.app.AlertDialog.Builder(this)
+                            .setTitle("Permission Required")
+                            .setMessage("Please grant storage and media permissions from settings to use this app.")
+                            .setPositiveButton("Open Settings", (dialog, which) -> {
+                                Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                                intent.setData(android.net.Uri.parse("package:" + getPackageName()));
+                                startActivity(intent);
+                                dialog.dismiss();
+                            })
+                            .setNegativeButton("Exit", (dialog, which) -> {
+                                dialog.dismiss();
+                                finish();
+                            })
+                            .show();
+                }
                 else
-                    finish();
+                {
+                    // Retry permission request
+                    requestPermissions();
+                }
+            }
         }
     }
+
 }
